@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Secure XSS Example</title>
+</head>
+
+<body>
+
+    <h1>Cross-Site Scripting – Secure Example</h1>
+
+    <p>
+        This page demonstrates secure rendering of user-supplied input
+        using Thymeleaf.
+    </p>
+
+    <form action="/secure" method="get">
+
+        <label for="input">
+            Enter text:
+        </label>
+
+        <input
+            type="text"
+            id="input"
+            name="input"
+            size="60"
+            value="Hello from the user">
+
+	<p>
+	    <label>
+    		Replace the text above with:
+    		<code>&lt;script&gt;alert('XSS')&lt;/script&gt;</code>
+		<br>
+    		Submit the same input on both the Vulnerable and Secure pages and compare the results.
+	    </label>
+	</p>
+
+
+        <button type="submit">
+            Submit
+        </button>
+
+    </form>
+
+    <h2>Rendered Output</h2>
+
+    <!--
+        SECURE
+
+        th:text escapes the value before rendering it.
+        User-supplied HTML is therefore displayed as text rather
+        than being interpreted as HTML by the browser.
+    -->
+
+    <div th:text="${userInput}"></div>
+
+    <div class="safe">
+    	<strong>Why was this safe?</strong>
+    	<p>
+        	This page safely renders user-supplied input using output encoding.
+        	The browser therefore treats the input as text rather than
+        	executable HTML or JavaScript.
+    	</p>
+   </div>
+
+    <p>
+        <a href="/vulnerable">
+            Go to Vulnerable Example
+        </a>
+    </p>
+
+</body>
+
+</html>

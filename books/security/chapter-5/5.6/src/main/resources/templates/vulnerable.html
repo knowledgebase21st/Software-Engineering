@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Vulnerable XSS Example</title>
+</head>
+
+<body>
+
+    <h1>Cross-Site Scripting – Vulnerable Example</h1>
+
+    <p>
+        This page intentionally demonstrates unsafe rendering of
+        user-supplied input.
+    </p>
+
+    <form action="/vulnerable" method="get">
+
+        <label for="input">
+            Enter text:
+        </label>
+
+        <input
+            type="text"
+            id="input"
+            name="input"
+            size="60"
+            value="Hello from the user">
+
+	<p>
+	    <label>
+    		Replace the text above with:
+    		<code>&lt;script&gt;alert('XSS')&lt;/script&gt;</code>
+		<br>
+    		Submit the same input on both the Vulnerable and Secure pages and compare the results.
+	   </label>
+	</p>
+
+        <button type="submit">
+            Submit
+        </button>
+
+    </form>
+
+    <h2>Rendered Output</h2>
+
+    <!--
+        INTENTIONALLY VULNERABLE
+
+        th:utext renders the value as unescaped HTML.
+        Do not use this approach with untrusted user input
+        in a production application.
+    -->
+
+    <div th:utext="${userInput}"></div>
+    <div class="warning">
+    <strong>Why did this happen?</strong>
+    <p>
+        This page intentionally renders user-supplied input without
+        appropriate output encoding. The browser therefore interprets
+        HTML or JavaScript contained in the input as markup or executable
+        content.
+    </p>
+    </div>
+
+    <p>
+        <a href="/secure">
+            Go to Secure Example
+        </a>
+    </p>
+
+</body>
+
+</html>
