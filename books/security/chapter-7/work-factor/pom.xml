@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Chapter 7 – Password Hashing and Salting
+
+    This Maven configuration builds the work-factor demonstration
+    used in Chapter 7.
+
+    The example demonstrates how increasing the BCrypt work factor
+    affects password-hashing verification time.
+
+    The purpose is to illustrate computational cost and parameter
+    tuning. The measured timings are specific to the machine on
+    which the example is executed and must not be treated as
+    universal benchmarks.
+
+    Java Version: 17
+    Author: Sanjay Ghosh
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.clockwiseknowledge.security</groupId>
+    <artifactId>work-factor</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <name>Chapter 7 - Work Factor</name>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <spring-security.version>7.1.1</spring-security.version>
+        <spring-framework.version>7.0.9</spring-framework.version>
+        <commons-logging.version>1.3.5</commons-logging.version>
+    </properties>
+
+    <dependencies>
+
+        <!--
+            Spring Security Crypto
+
+            Provides BCryptPasswordEncoder and its configurable
+            work factor.
+
+            Author: Sanjay Ghosh
+        -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+
+        <!--
+            Spring Core
+
+            Required for standalone use of Spring Security Crypto.
+
+            Author: Sanjay Ghosh
+        -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>${spring-framework.version}</version>
+        </dependency>
+
+        <!--
+            Apache Commons Logging
+
+            Provides the logging classes required by Spring Framework.
+
+            Author: Sanjay Ghosh
+        -->
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>${commons-logging.version}</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <!--
+                Maven Compiler Plugin
+
+                Compiles the example using Java 17.
+
+                Author: Sanjay Ghosh
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.1</version>
+                <configuration>
+                    <release>17</release>
+                </configuration>
+            </plugin>
+
+            <!--
+                Maven Exec Plugin
+
+                Runs the example using the complete Maven
+                dependency classpath.
+
+                Author: Sanjay Ghosh
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <mainClass>
+                        com.clockwiseknowledge.security.WorkFactorDemo
+                    </mainClass>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

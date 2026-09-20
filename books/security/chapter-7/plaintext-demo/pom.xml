@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Chapter 7 – Password Hashing and Salting
+
+    This Maven configuration builds the plaintext password
+    demonstration used in Chapter 7.
+
+    The example intentionally demonstrates insecure plaintext
+    password storage for educational purposes.
+
+    Java Version: 17
+    Author: Sanjay Ghosh
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.clockwiseknowledge.security</groupId>
+    <artifactId>plaintext-demo</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <name>Chapter 7 - Plaintext Password Demo</name>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <build>
+        <plugins>
+
+            <!--
+                Maven Compiler Plugin
+
+                Compiles the example using Java 17.
+
+                Author: Sanjay Ghosh
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.1</version>
+                <configuration>
+                    <release>17</release>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

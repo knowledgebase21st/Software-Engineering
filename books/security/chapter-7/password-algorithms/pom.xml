@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Chapter 7 – Password Hashing and Salting
+
+    This Maven configuration builds the password-algorithms
+    demonstration used in Chapter 7.
+
+    The example demonstrates four password-specific hashing
+    algorithms provided by Spring Security Crypto:
+
+        - BCrypt
+        - SCrypt
+        - PBKDF2
+        - Argon2
+
+    Established library implementations are used rather than
+    implementing password-hashing algorithms manually.
+
+    Java Version: 17
+    Author: Sanjay Ghosh
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.clockwiseknowledge.security</groupId>
+    <artifactId>password-algorithms</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <name>Chapter 7 - Password Algorithms</name>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <spring-security.version>7.1.1</spring-security.version>
+        <spring-framework.version>7.0.9</spring-framework.version>
+        <commons-logging.version>1.3.5</commons-logging.version>
+        <bouncycastle.version>1.86</bouncycastle.version>
+    </properties>
+
+    <dependencies>
+
+        <!--
+            Spring Security Crypto
+
+            Provides established implementations of:
+            BCrypt, SCrypt, PBKDF2, and Argon2.
+
+            Author: Sanjay Ghosh
+        -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+
+        <!--
+            Spring Core
+
+            Required for standalone use of Spring Security Crypto.
+
+            Author: Sanjay Ghosh
+        -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>${spring-framework.version}</version>
+        </dependency>
+
+        <!--
+            Apache Commons Logging
+
+            Provides the logging classes required by Spring Framework.
+
+            Author: Sanjay Ghosh
+        -->
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>${commons-logging.version}</version>
+        </dependency>
+
+        <!--
+            Bouncy Castle
+
+            Required by Spring Security's Argon2PasswordEncoder.
+
+            Author: Sanjay Ghosh
+        -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>${bouncycastle.version}</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <!--
+                Maven Compiler Plugin
+
+                Compiles the example using Java 17.
+
+                Author: Sanjay Ghosh
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.1</version>
+                <configuration>
+                    <release>17</release>
+                </configuration>
+            </plugin>
+
+            <!--
+                Maven Exec Plugin
+
+                Runs the example using the complete Maven
+                dependency classpath.
+
+                Author: Sanjay Ghosh
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <mainClass>
+                        com.clockwiseknowledge.security.PasswordAlgorithmsDemo
+                    </mainClass>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
