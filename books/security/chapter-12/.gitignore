@@ -1,0 +1,18 @@
+# Maven build output
+target/
+
+# Compiled Java files
+*.class
+
+# Packaged Java artifacts
+*.jar
+
+# Demo keys and ciphertext
+demo-keys/
+
+# IDE files
+.idea/
+*.iml
+.project
+.classpath
+.settings/
