@@ -1,0 +1,512 @@
+# Chapter 17 — Keystore and Truststore
+
+Companion source code for **Chapter 17: Keystore and Truststore** of *Practical Application Security: A Software Engineer's Guide to Secure Development, Authentication, Cryptography, and AI-Assisted Security Engineering* by Sanjay Ghosh.
+
+This project demonstrates how Java applications manage cryptographic keys and certificates, configure truststores, inspect X.509 certificates, generate a test certificate hierarchy, and establish TLS connections using a custom truststore.
+
+## 1. Learning Objectives
+
+After working through this project, you should understand how to:
+
+- Distinguish a keystore from a truststore.
+- Inspect Java keystore and truststore entries.
+- Generate a root CA, intermediate CA, and server certificate for testing.
+- Configure a Java TLS client to trust a custom certificate authority.
+- Perform TLS handshakes using Java's JSSE APIs.
+- Verify certificate chains and hostnames using OpenSSL.
+- Inspect certificate properties using Java.
+- Protect private keys and exclude generated security artifacts from source control.
+
+## 2. Prerequisites
+
+Install the following tools:
+
+- **Java Development Kit (JDK):** Java 17 or later compatible with the project configuration.
+- **Apache Maven:** For compiling and running the Java examples.
+- **Bash:** For executing the certificate-generation scripts.
+- **OpenSSL:** For certificate inspection and verification.
+- **Git:** Optional, for version control.
+
+Verify your Java and Maven installations:
+
+```bash
+java -version
+javac -version
+mvn -version
+openssl version
+```
+
+The Java compiler and Maven must use a compatible JDK.
+
+## 3. Project Structure
+
+```text
+chapter-17/
+├── .gitignore
+├── pom.xml
+├── README.md
+├── scripts/
+│   ├── generate-test-keystore.sh
+│   ├── export-test-certificate.sh
+│   └── import-test-certificate.sh
+├── src/
+│   └── main/
+│       └── java/
+│           └── com/
+│               └── clockwiseknowledge/
+│                   └── security/
+│                       ├── KeyStoreInfo.java
+│                       ├── TrustStoreInfo.java
+│                       ├── TLSWithCustomTrustStore.java
+│                       ├── CertificateGenerator.java
+│                       ├── MockTLSServer.java
+│                       ├── MockTLSClient.java
+│                       └── CertificateInspector.java
+├── generated/                 # Generated locally; not committed
+└── target/                    # Maven build output; not committed
+```
+
+The `generated/` directory contains test certificates, keystores, truststores, and potentially exported private keys. Keep these artifacts out of version control.
+
+## 4. Build the Project
+
+From the `chapter-17` directory, run:
+
+```bash
+mvn clean package
+```
+
+Maven compiles the Java source files and packages the project.
+
+The project uses the Maven Exec Plugin to run individual classes. The examples below invoke version 3.5.0 directly, so the plugin does not have to be declared separately in `pom.xml` for these commands.
+
+## 5. Generate Test Certificates
+
+The project provides two ways to prepare test certificates.
+
+### Option A: Generate a complete CA hierarchy
+
+Run the Java certificate generator:
+
+```bash
+mvn org.codehaus.mojo:exec-maven-plugin:3.5.0:java \
+  -Dexec.mainClass=com.clockwiseknowledge.security.CertificateGenerator
+```
+
+Follow the password prompt. Use a strong password of at least 12 characters, as required by the program.
+
+The generator creates the `generated/` directory and the following files:
+
+| File | Purpose |
+|---|---|
+| `root-ca.p12` | Root CA private key and certificate |
+| `intermediate-ca.p12` | Intermediate CA private key and certificate chain |
+| `server-keystore.p12` | Server private key and server certificate chain |
+| `client-truststore.p12` | Root CA certificate trusted by the client |
+| `root-ca.pem` | Public root CA certificate |
+| `intermediate-ca.pem` | Public intermediate CA certificate |
+| `server-cert.pem` | Public server certificate |
+
+The generated PKCS#12 stores use the password entered during generation.
+
+**Important:** The generator does not overwrite a non-empty `generated/` directory. Back up any files you need before removing or renaming that directory to generate a fresh set.
+
+### Option B: Generate a simple self-signed server certificate
+
+The Bash scripts provide a simpler setup for basic keystore and truststore demonstrations.
+
+Make the scripts executable:
+
+```bash
+chmod +x scripts/*.sh
+```
+
+Run them in this order:
+
+```bash
+./scripts/generate-test-keystore.sh
+./scripts/export-test-certificate.sh
+./scripts/import-test-certificate.sh
+```
+
+These scripts create the basic server keystore, export its public certificate, and import that certificate into a test truststore. Follow the prompts for passwords and certificate acceptance.
+
+This simpler setup is separate from the root/intermediate/server hierarchy generated by `CertificateGenerator.java`. Use the file names and paths appropriate to the setup you selected.
+
+## 6. Understanding the Certificate Hierarchy
+
+The complete certificate hierarchy is:
+
+```text
+Root CA
+  |
+  └── Intermediate CA
+         |
+         └── Server certificate (CN=localhost)
+```
+
+The server certificate includes these Subject Alternative Names:
+
+- `DNS:localhost`
+- `IP:127.0.0.1`
+
+The generated server keystore contains the server's private key and its certificate chain, including the intermediate certificate. The root certificate is not included in the server's presented chain.
+
+The client's truststore contains the root CA certificate, which acts as the trust anchor.
+
+During a successful TLS handshake:
+
+1. The server presents its server certificate and intermediate certificate.
+2. The client builds and validates the certification path to its trusted root.
+3. The client verifies that the certificate is valid for the requested hostname.
+4. If the required checks succeed, the TLS handshake completes.
+5. The client and server exchange application data over the encrypted connection.
+
+The server's private key is never sent to the client. The client does not need the root CA's private key.
+
+Trusting a root certificate alone does not guarantee that every certificate issued under it will be accepted. Certificate validity, chain construction, hostname verification, and other applicable validation checks must also succeed.
+
+## 7. Java Example 1 — Inspect a Keystore
+
+`KeyStoreInfo.java` loads a keystore and displays information about its entries without printing private key material.
+
+Run it against the generated server keystore:
+
+```bash
+mvn org.codehaus.mojo:exec-maven-plugin:3.5.0:java \
+  -Dexec.mainClass=com.clockwiseknowledge.security.KeyStoreInfo \
+  -Dexec.args="generated/server-keystore.p12 PKCS12"
+```
+
+Enter the keystore password when prompted.
+
+The output includes the keystore type, entry count, aliases, entry types, certificate subjects, issuers, and validity dates.
+
+## 8. Java Example 2 — Inspect a Truststore
+
+`TrustStoreInfo.java` displays the trusted certificate entries in a truststore.
+
+Run:
+
+```bash
+mvn org.codehaus.mojo:exec-maven-plugin:3.5.0:java \
+  -Dexec.mainClass=com.clockwiseknowledge.security.TrustStoreInfo \
+  -Dexec.args="generated/client-truststore.p12 PKCS12"
+```
+
+Enter the truststore password when prompted.
+
+For the CA hierarchy setup, the truststore should contain the root CA certificate.
+
+Checking a certificate's validity dates is not equivalent to validating its certificate chain or establishing trust.
+
+## 9. Java Example 3 — Connect Using a Custom Truststore
+
+`TLSWithCustomTrustStore.java` configures an HTTPS client with a custom truststore.
+
+Start the local mock TLS server as described in Section 11, then run the client in a second terminal:
+
+```bash
+mvn org.codehaus.mojo:exec-maven-plugin:3.5.0:java \
+  -Dexec.mainClass=com.clockwiseknowledge.security.TLSWithCustomTrustStore \
+  -Dexec.args="generated/client-truststore.p12 PKCS12 https://localhost:8443"
+```
+
+Enter the truststore password when prompted.
+
+The client connects to the HTTPS endpoint using the configured trust material. Hostname verification remains enabled through the HTTPS connection's standard behavior.
+
+This example demonstrates using a custom truststore with `HttpsURLConnection`.
+
+## 10. Java Example 4 — Generate a Certificate Hierarchy
+
+`CertificateGenerator.java` creates a test root CA, intermediate CA, server certificate, and client truststore.
+
+Run:
+
+```bash
+mvn org.codehaus.mojo:exec-maven-plugin:3.5.0:java \
+  -Dexec.mainClass=com.clockwiseknowledge.security.CertificateGenerator
+```
+
+Enter a strong password when prompted.
+
+Use this example to explore certificate subjects, issuers, basic constraints, certificate chains, and the relationship between private keys and public certificates.
+
+The generated keys and certificates are for local educational testing, not production PKI deployment.
+
+## 11. Java Examples 5 and 6 — Test a TLS Connection
+
+`MockTLSServer.java` and `MockTLSClient.java` demonstrate a TLS handshake and an HTTP exchange using the generated certificate hierarchy.
+
+### Terminal 1: Start the server
+
+```bash
+mvn org.codehaus.mojo:exec-maven-plugin:3.5.0:java \
+  -Dexec.mainClass=com.clockwiseknowledge.security.MockTLSServer \
+  -Dexec.args="generated/server-keystore.p12 PKCS12 8443"
+```
+
+Enter the server keystore password.
+
+The server listens on port `8443` and waits for one client connection. This example accepts one connection and then exits, so restart it before each additional test.
+
+### Terminal 2: Run the client
+
+```bash
+mvn org.codehaus.mojo:exec-maven-plugin:3.5.0:java \
+  -Dexec.mainClass=com.clockwiseknowledge.security.MockTLSClient \
+  -Dexec.args="generated/client-truststore.p12 PKCS12 localhost 8443"
+```
+
+Enter the truststore password.
+
+The client uses the custom truststore and enables HTTPS endpoint identification for hostname verification. It then sends an HTTP request and prints the server's response.
+
+### Verified test result
+
+The test completed successfully with:
+
+```text
+TLS handshake successful.
+Protocol: TLSv1.3
+Cipher suite: TLS_AES_256_GCM_SHA384
+```
+
+The client received:
+
+```text
+HTTP/1.1 200 OK
+Content-Type: text/plain; charset=UTF-8
+Content-Length: 43
+Connection: close
+
+Hello from the Chapter 17 mock TLS server!
+```
+
+Both Maven executions completed with `BUILD SUCCESS`.
+
+This confirms that the client and server established a TLS 1.3 connection and exchanged the expected HTTP response using the custom truststore.
+
+## 12. Java Example 7 — Inspect an X.509 Certificate
+
+`CertificateInspector.java` reads a public certificate in PEM or DER format and displays its properties.
+
+Inspect the server certificate:
+
+```bash
+mvn org.codehaus.mojo:exec-maven-plugin:3.5.0:java \
+  -Dexec.mainClass=com.clockwiseknowledge.security.CertificateInspector \
+  -Dexec.args="generated/server-cert.pem"
+```
+
+Inspect the intermediate CA certificate:
+
+```bash
+mvn org.codehaus.mojo:exec-maven-plugin:3.5.0:java \
+  -Dexec.mainClass=com.clockwiseknowledge.security.CertificateInspector \
+  -Dexec.args="generated/intermediate-ca.pem"
+```
+
+Inspect the root CA certificate:
+
+```bash
+mvn org.codehaus.mojo:exec-maven-plugin:3.5.0:java \
+  -Dexec.mainClass=com.clockwiseknowledge.security.CertificateInspector \
+  -Dexec.args="generated/root-ca.pem"
+```
+
+The output includes the subject, issuer, serial number, validity dates, public-key algorithm and size, signature algorithm, basic constraints, and Subject Alternative Names.
+
+The server certificate should identify `localhost`, be issued by the intermediate CA, and contain the expected DNS and IP SAN entries.
+
+Certificate inspection is diagnostic; it does not independently validate a chain or establish trust.
+
+## 13. OpenSSL Verification
+
+The following commands apply to the complete CA hierarchy generated by `CertificateGenerator.java`.
+
+### Inspect a certificate
+
+```bash
+openssl x509 \
+  -in generated/server-cert.pem \
+  -noout \
+  -subject \
+  -issuer \
+  -dates
+```
+
+### Verify the certificate chain
+
+```bash
+openssl verify \
+  -CAfile generated/root-ca.pem \
+  -untrusted generated/intermediate-ca.pem \
+  generated/server-cert.pem
+```
+
+### Verify the chain and hostname
+
+```bash
+openssl verify \
+  -CAfile generated/root-ca.pem \
+  -untrusted generated/intermediate-ca.pem \
+  -verify_hostname localhost \
+  generated/server-cert.pem
+```
+
+To verify the IP address instead:
+
+```bash
+openssl verify \
+  -CAfile generated/root-ca.pem \
+  -untrusted generated/intermediate-ca.pem \
+  -verify_ip 127.0.0.1 \
+  generated/server-cert.pem
+```
+
+A successful verification should report:
+
+```text
+generated/server-cert.pem: OK
+```
+
+### Inspect a remote TLS server
+
+For a public TLS endpoint:
+
+```bash
+openssl s_client \
+  -connect example.com:443 \
+  -servername example.com \
+  -showcerts
+```
+
+To require verification errors to terminate the connection and check the hostname:
+
+```bash
+openssl s_client \
+  -connect example.com:443 \
+  -servername example.com \
+  -verify_return_error \
+  -verify_hostname example.com
+```
+
+Replace `example.com` with the intended hostname. Results for public endpoints depend on network connectivity, server configuration, and the local OpenSSL trust configuration.
+
+### Export and inspect a private key
+
+For educational inspection only, a private key can be exported from a PKCS#12 keystore:
+
+```bash
+openssl pkcs12 \
+  -in generated/server-keystore.p12 \
+  -nocerts \
+  -noenc \
+  -out generated/server-private-key.pem
+```
+
+On older OpenSSL versions, `-nodes` may be used instead of `-noenc`.
+
+Check the exported key:
+
+```bash
+openssl pkey \
+  -in generated/server-private-key.pem \
+  -check \
+  -noout
+```
+
+**Security warning:** The exported PEM key is unencrypted. Protect it and delete it when no longer needed. Do not commit private keys to Git or distribute them with the example project.
+
+## 14. Troubleshooting
+
+### `Keystore was tampered with, or password was incorrect`
+
+Verify that you entered the correct password for the selected keystore or truststore.
+
+### `FileNotFoundException` or a missing certificate
+
+Run commands from the `chapter-17` directory and confirm that the expected files exist under `generated/`.
+
+### TLS handshake failure
+
+Check that:
+
+- The server is running on port `8443`.
+- The client is using the correct truststore.
+- The truststore contains the intended root certificate.
+- The server keystore contains the correct server private key and certificate chain.
+- The server certificate is within its validity period.
+- The requested hostname or IP address matches a certificate SAN.
+- The client and server are using compatible TLS configurations.
+
+Restart `MockTLSServer` before repeating a test because it handles one connection and exits.
+
+### Certificate verification fails in OpenSSL
+
+Confirm that the correct root CA is supplied with `-CAfile` and that the intermediate certificate is supplied with `-untrusted`. Check the certificate dates, issuer relationships, and SAN entries.
+
+### The certificate generator refuses to run
+
+The generator intentionally avoids overwriting a non-empty `generated/` directory. Back up any files you need, then remove or rename the directory before generating a new set.
+
+## 15. Cleanup
+
+To remove the generated files from this project's local working directory:
+
+```bash
+rm -rf generated/
+```
+
+This deletes generated test certificates, keystores, truststores, and any exported private keys stored there. Back up anything you need before running the command.
+
+To remove Maven build output:
+
+```bash
+mvn clean
+```
+
+The setup scripts create files in their configured working directory. Review their output paths before removing any additional files they generated.
+
+## 16. Git and Security Best Practices
+
+The project `.gitignore` excludes generated artifacts, private keys, keystores, truststores, compiled classes, and Maven build output.
+
+Check whether a file is ignored:
+
+```bash
+git check-ignore -v generated/server-keystore.p12
+git check-ignore -v generated/client-truststore.p12
+```
+
+Remember:
+
+- Never commit private keys, passwords, or production credentials.
+- Keep a root CA private key strongly protected; production root keys are often kept offline.
+- Use a certificate authority and managed key storage appropriate to the deployment environment.
+- Verify certificate fingerprints through a trusted channel before accepting certificates.
+- Do not disable hostname verification to make a TLS test pass.
+- Treat self-signed certificates and locally generated CA certificates as test material unless they have been deliberately established as trusted.
+- Use current, supported cryptographic configurations for production systems.
+
+## 17. References
+
+- Clockwise Knowledge — [Java keytool](https://clockwiseknowledge.com/se/keytool.html)
+- Clockwise Knowledge — [OpenSSL](https://clockwiseknowledge.com/se/openssl.html)
+- Clockwise Knowledge — [Truststore vs. Keystore](https://clockwiseknowledge.com/se/truststore-keystore.html)
+- Oracle Java Documentation — [JSSE Reference Guide](https://docs.oracle.com/en/java/javase/17/security/java-secure-socket-extension-jsse-reference-guide.html)
+- OpenSSL Documentation — [OpenSSL Commands](https://docs.openssl.org/)
+- IETF — [RFC 5280: Internet X.509 Public Key Infrastructure Certificate and CRL Profile](https://www.rfc-editor.org/rfc/rfc5280)
+- IETF — [RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3](https://www.rfc-editor.org/rfc/rfc8446)
+- Bouncy Castle — [Official Website](https://www.bouncycastle.org/)
+
+---
+
+**Project:** Chapter 17 — Keystore and Truststore
+
+**Author:** Sanjay Ghosh
+
+**Purpose:** Educational companion source code for practical application security.
+

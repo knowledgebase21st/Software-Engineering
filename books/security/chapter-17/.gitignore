@@ -1,0 +1,87 @@
+
+# ============================================================
+# Maven / Java build output
+# ============================================================
+target/
+*.class
+
+# ============================================================
+# Generated certificates, keystores, truststores, and keys
+# ============================================================
+generated/
+
+# Java KeyStore and PKCS#12 files
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.p12.bak
+
+# Private keys
+*.key
+*.pem
+*.p8
+*.p12.key
+*.private
+
+# Certificate requests and certificates
+*.csr
+*.cer
+*.crt
+*.der
+*.cert
+
+# Certificate revocation lists
+*.crl
+
+# ============================================================
+# Secret files and local configuration
+# ============================================================
+.env
+.env.*
+!.env.example
+*.secret
+*.secrets
+secrets/
+credentials/
+private/
+
+# ============================================================
+# Logs and temporary files
+# ============================================================
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+*~
+
+# ============================================================
+# IDEs and editors
+# ============================================================
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# Visual Studio Code
+.vscode/
+
+# NetBeans
+/nbproject/private/
+
+# ============================================================
+# Operating system files
+# ============================================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
