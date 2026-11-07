@@ -1,0 +1,12 @@
+# Maven build output
+target/
+
+# Environment-specific configuration
+application.properties
+
+# IDE files
+.idea/
+*.iml
+.classpath
+.project
+.settings/
